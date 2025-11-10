@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}ダッシュボード{% endblock %}
+
+{% block contents %}
+<div class="container my-5">
+
+    <div class="text-center mb-5">
+        <h1 class="mb-3">
+            {% if request.user.is_authenticated %}
+                {{ request.user.get_role_display }} ダッシュボード
+            {% else %}
+                勤怠管理システムへようこそ
+            {% endif %}
+        </h1>
+        <p class="lead text-muted">必要なメニューを選択してください。</p>
+    </div>
+
+    {% if request.user.is_authenticated %}
+    <div class="row justify-content-center">
+        {# ========================================== #}
+        {# 💡 共通社員向けカード群 #}
+        {# ========================================== #}
+        <div class="col-12 col-sm-6 col-md-4 mb-4">
+            <div class="card h-100 shadow text-center border-primary">
+                <div class="card-body">
+                    <i class="bi bi-pencil-square text-primary mb-3" style="font-size: 2.5rem;"></i>
+                    <h5 class="card-title">各種申請</h5>
+                    <p class="card-text small text-muted">有給・遅刻など申請をします。</p>
+                    <a href="" class="btn btn-primary mt-2">
+                        <i class="bi bi-file-earmark-plus"></i> 申請する
+                    </a>
+                    <a href="" class="btn btn-secondary mt-2">
+                        <i class="bi bi-archive"></i> 過去の申請一覧
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 mb-4">
+            <div class="card h-100 shadow text-center border-warning">
+                <div class="card-body">
+                    <i class="bi bi-clock-fill text-warning mb-3" style="font-size: 2.5rem;"></i>
+                    <h5 class="card-title">勤怠管理</h5>
+                    <p class="card-text small text-muted">
+                        ログインユーザーの勤怠記録を確認します。
+                    </p>
+                    {% if request.user.is_hr %}
+                        <a href="{% url 'attendance:hr_attendance_list'%}" class="btn btn-secondary mt-2">
+                            <i class="bi bi-list-ul"></i> 全従業員記録一覧
+                        </a>
+                        <a href="{% url 'attendance:hr_attendance_create'%}" class="btn btn-secondary mt-2">
+                            <i class="bi bi-file-earmark-plus"></i> 勤怠記録作成
+                        </a>
+                    
+                    {% elif request.user.is_manager %}
+                        <a href="{% url 'attendance:manager_attendance_list' %}" class="btn btn-secondary mt-2">
+                            <i class="bi bi-list-ul"></i> 部署記録一覧を見る
+                        </a>
+                        
+                    {% endif %}
+                    <a href="{% url 'attendance:attendance_list' %}" class="btn btn-warning mt-2">
+                        <i class="bi bi-list-ul"></i> 記録一覧を見る
+                    </a>
+                    <a href="{% url 'attendance:dashboard' %}" class="btn btn-warning mt-2">
+                        <i class="bi bi-person-badge-fill"></i> 打刻する
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        
+        {# ------------------------------------------ #}
+        {# 💡 3. 【新規】データ分析・グラフカード（グラフ画面へのリンク） #}
+        <div class="col-12 col-sm-6 col-md-4 mb-4">
+            <div class="card h-100 shadow text-center border-info">
+                <div class="card-body">
+                    <i class="bi bi-graph-up text-info mb-3" style="font-size: 2.5rem;"></i>
+                    <h5 class="card-title">データ分析・グラフ</h5>
+                    <p class="card-text small text-muted">
+                        残業時間の推移をグラフで確認します。
+                    </p>
+                    {# 💡 ここにグラフ画面へのURLを設定します #}
+                    {% if request.user.is_head_teacher %}
+                        <a href="" class="btn btn-info mt-2">
+                            <i class="bi bi-bar-chart-line"></i> グラフ分析画面へ
+                        </a>
+                    {% else %}
+                        <a href="" class="btn btn-info mt-2">
+                            <i class="bi bi-bar-chart-line"></i> グラフ分析画面へ
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {# ------------------------------------------ #}
+
+
+        {# ========================================== #}
+        {# 💡 人事向けカード群 #}
+        {# ========================================== #}
+        {% if request.user.is_hr %}
+        <div class="col-12 col-sm-6 col-md-4 mb-4">
+            <div class="card h-100 shadow text-center border-success">
+                <div class="card-body">
+                    <i class="bi bi-people-fill text-success mb-3" style="font-size: 2.5rem;"></i>
+                    <h5 class="card-title">社員管理</h5>
+                    <p class="card-text small text-muted">アカウント作成、承認を行います。</p>
+                    <a href="{% url 'accounts:profile_list' %}" class="btn btn-success mt-2">
+                        <i class="bi bi-list-columns"></i> ユーザー一覧へ
+                    </a>
+                    <a href="{% url 'accounts:signup' %}" class="btn btn-success mt-2">
+                        <i class="bi bi-person-plus-fill"></i> ユーザー作成へ
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 mb-4">
+            <div class="card h-100 shadow text-center border-info">
+                <div class="card-body">
+                    <i class="bi bi-door-closed-fill text-info mb-3" style="font-size: 2.5rem;"></i>
+                    <h5 class="card-title">所属課管理</h5>
+                    <p class="card-text small text-muted">
+                        部署・課設定を行います。ユーザー登録前に完了させてください。
+                    </p>
+                    <a href="{% url 'accounts:team_list' %}" class="btn btn-info mt-2">
+                        <i class="bi bi-list-columns"></i> 課一覧へ
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 mb-4">
+            <div class="card h-100 shadow text-center border-secondary">
+                <div class="card-body">
+                    <i class="bi bi-building text-secondary mb-3" style="font-size: 2.5rem;"></i>
+                    <h5 class="card-title">部署管理</h5>
+                    <p class="card-text small text-muted">部署設定を行います。システム開始時に必須です。</p>
+                    <a href="{% url 'accounts:department_list' %}" class="btn btn-secondary mt-2">
+                        <i class="bi bi-list-columns"></i>部署一覧へ
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="row justify-content-center">
+        <div class="col-12 col-sm-8 col-md-6 mb-4">
+            <div class="card p-5 shadow text-center">
+                <p class="lead">システムを利用するにはログインが必要です。</p>
+                <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg mt-3">
+                    <i class="bi bi-box-arrow-in-right me-2"></i> ログイン画面へ
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

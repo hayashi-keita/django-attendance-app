@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}ユーザー一覧{% endblock %}
+
+{% block contents %}
+<div class="row my-4">
+    <div class="col-12">
+        <h1 class="h3 mb-4 text-gray-800">
+            <i class="bi bi-people-fill me-2"></i>ユーザー一覧
+            {% if unapproved_count > 0 %}
+                <span class="badge bg-danger rounded-pill ms-3 p-2 shadow">
+                    <i class="bi bi-bell-fill me-1"></i> 未読 <span class="fw-bold">{{ unapproved_count }}</span> 件
+                </span>
+            {% endif %}
+        </h1>
+        
+        <!-- フィルタリング/検索フォーム -->
+        <div class="card shadow mb-4">
+            <div class="card-body bg-light rounded">
+                <form method="get" class="row g-3 align-items-end">
+                    
+                    <!-- 検索キーワード -->
+                    <div class="col-md-6 col-lg-4">
+                        <label for="q-filter" class="form-label small fw-bold">氏名、ユーザー名で検索</label>
+                        <input type="text" id="q-filter" name="q" 
+                               value="{{ q }}" 
+                               class="form-control form-control-sm"
+                               placeholder="検索キーワード">
+                    </div>
+
+                    <!-- 役割フィルター -->
+                    <div class="col-md-3 col-lg-2">
+                        <label for="role-filter" class="form-label small fw-bold">役割</label>
+                        <select id="role-filter" name="role" class="form-select form-select-sm">
+                            <option value="">全ての役割</option>
+                            {% for value, label in roles %}
+                                <option value="{{ value }}" {% if request.GET.role|default:'' == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- 部署フィルター (ビューから渡された departments を使用) -->
+                    <div class="col-md-3 col-lg-2">
+                        <label for="department-filter" class="form-label small fw-bold">学年</label>
+                        <select id="department-filter" name="department" class="form-select form-select-sm">
+                            <option value="">全ての学年</option>
+                            {% for d in departments %}
+                                <option value="{{ d.pk }}" {% if request.GET.department|default:'' == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- 承認状態フィルター -->
+                    <div class="col-md-3 col-lg-2">
+                        <label for="approval-filter" class="form-label small fw-bold">承認状態</label>
+                        <select id="approval-filter" name="approval" class="form-select form-select-sm">
+                            <option value="">全て</option>
+                            <option value="approved" {% if request.GET.approval|default:'' == 'approved'%}selected{% endif %}>承認済</option>
+                            <option value="unapproved" {% if request.GET.approval|default:'' == 'unapproved'%}selected{% endif %}>未承認</option>
+                        </select>
+                    </div>
+
+                    <!-- ボタン群 -->
+                    <div class="col-md-12 col-lg-4 d-flex">
+                        <button type="submit" 
+                                class="btn btn-primary btn-sm me-2 flex-grow-1">
+                            <i class="bi bi-filter"></i> フィルタ適用 / 検索
+                        </button>
+                        <!-- リセットボタン: クエリパラメータなしで現在のURLに遷移 -->
+                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="window.location.href='{% url 'accounts:profile_list' %}'">
+                            <i class="bi bi-arrow-counterclockwise"></i> リセット
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- ユーザーテーブル -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-primary text-white">
+                <h6 class="m-0 font-weight-bold">ユーザー名簿</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col" style="width: 5%;">ID</th>
+                                <th scope="col" style="width: 20%;">氏名</th>
+                                <th scope="col" style="width: 15%;">ユーザー名</th>
+                                <th scope="col" style="width: 15%;">役割</th>
+                                <th scope="col" style="width: 15%;">部署</th>
+                                <th scope="col" style="width: 15%;">課</th>
+                                <th scope="col" style="width: 15%;">社員番号</th>
+                                <th scope="col" class="text-center" style="width: 15%;">操作</th>
+                            </tr>
+                        </thead>
+                            <tbody>
+                                {% for obj in object_list %}
+                                    <tr {% if not obj.is_active %}class="table-warning"{% endif %}>
+                                        <td>{{ obj.pk }}</td>
+                                        <td>
+                                            <a href="{% url 'accounts:profile_detail' obj.pk %}" class="text-decoration-none fw-bold text-dark">
+                                                {{ obj.full_name|default:obj.username|default:"No Name" }}
+                                            </a>
+                                        </td>
+                                        <td class="small text-muted">{{ obj.username }}</td>
+                                        <td>
+                                            {% if obj.is_employee %}
+                                                <span class="badge bg-info">社員</span>
+                                            {% elif obj.is_manager %}
+                                                <span class="badge bg-warning text-dark">上司</span>
+                                            {% elif obj.is_hr %}
+                                                <span class="badge bg-primary text-light">人事</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ obj.get_role_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ obj.department.name|default:"-" }}</td>
+                                        <td>{{ obj.team.name|default:"-" }}</td>
+                                        <td>{{ obj.employee_number|default:"-" }}</td>
+                                        <td class="text-center text-nowrap">
+                                            <a href="{% url 'accounts:profile_detail' obj.pk %}" class="btn btn-sm btn-outline-info me-1">
+                                                <i class="bi bi-eye"></i> 詳細
+                                            </a>
+                                            {% if request.user.is_hr %}
+                                                <a href="{% url 'accounts:profile_update' obj.pk %}" class="btn btn-warning btn-sm me-1">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="{% url 'accounts:profile_delete' obj.pk %}" class="btn btn-danger btn-sm">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                                {% if not obj.is_active %}
+                                                    <form method="post" action="{% url 'accounts:user_approve' obj.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type=submit class="btn btn-sm btn-success">
+                                                            <i class="bi bi-check-circle"></i> 承認
+                                                        </button>
+                                                    </form>
+                                                {% else %}
+                                                    <span class="badge bg-success">承認済</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">ユーザーが見つかりませんでした。</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ページネーション -->
+        {% if is_paginated %}
+        <nav aria-label="ページネーション" class="mt-4">
+            <ul class="pagination justify-content-center shadow-sm">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ current_filters_query }}" aria-label="前へ">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                {% endif %}
+
+                {% for i in paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}&{{ current_filters_query }}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ current_filters_query }}" aria-label="次へ">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
