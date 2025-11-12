@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}申請削除確認{% endblock %}
+
+{% block contents %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <h2 class="mb-4 text-danger text-center">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> 削除確認
+            </h2>
+            <div class="card p-4 shadow">
+                <p class="lead text-center">
+                    以下の申請を<strong class="text-danger">完全に削除</strong>します。<br>
+                    この操作は元に戻せません。本当に削除してよろしいですか？
+                </p>
+
+                <div class="alert alert-light text-center">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-end">申請者：</dt>
+                        <dd class="col-sm-8 text-start">
+                            {{ object.applicant.full_name|default:object.applicant.username }}
+                        </dd>
+                        <dt class="col-sm-4 text-end">申請種別：</dt>
+                        <dd class="col-sm-8 text-start">
+                            {{ object.get_application_type_display }}
+                        </dd>
+                        <dt class="col-sm-4 text-end">開始日時：</dt>
+                        <dd class="col-sm-8 text-start">
+                            {{ object.start_datetime|date:"Y/m/d H:i" }}
+                        </dd>
+                        <dt class="col-sm-4 text-end">終了日時：</dt>
+                        <dd class="col-sm-8 text-start">
+                            {{ object.end_datetime|date:"Y/m/d H:i"|default:"-" }}
+                        </dd>
+                        <dt class="col-sm-4 text-end">申請理由：</dt>
+                        <dd class="col-sm-8 text-start">
+                            {{ object.reason|linebreaksbr|default:"（なし）" }}
+                        </dd>
+                        {% if object.rejection_reason %}
+                        <dt class="col-sm-4 text-end text-danger">却下理由：</dt>
+                        <dd class="col-sm-8 text-start text-danger">
+                            {{ object.rejection_reason|linebreaksbr }}
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-trash-fill me-2"></i> 削除を実行する
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-3">
+                    <a href="{% url 'application:application_detail' object.pk %}" class="btn btn-outline-secondary">
+                        キャンセルして戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

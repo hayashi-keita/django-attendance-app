@@ -1,7 +1,7 @@
 from django import forms
 from .models import Application
 
-class ApplicationForm(forms.ModleForm):
+class ApplicationForm(forms.ModelForm):
     class Meta:
         model = Application
         fields = ['application_type', 'start_datetime', 'end_datetime', 'reason']
@@ -17,9 +17,3 @@ class ApplicationForm(forms.ModleForm):
             'end_datetime': '終了日時',
             'reason': '申請理由',
         }
-
-class ApplicationApprovalForm(forms.ModelForm):
-    class Meta:
-        model = Application
-        fields = ['status']
-        widgets = {'status': forms.HiddenInput()}

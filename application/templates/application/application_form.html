@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if form.instance.pk %}申請内容の編集{% else %}新規申請の作成{% endif %}
+{% endblock %}
+
+{% block contents %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <h2 class="mb-4 text-center">
+                {% if form.instance.pk %}
+                    申請内容の編集（{{ form.instance.get_application_type_display }}）
+                {% else %}
+                    新規申請の作成
+                {% endif %}
+            </h2>
+            <p><span class="text-danger">*</span>は必須項目です</p>
+
+            <div class="card p-4 shadow">
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.non_filed_errors %}
+                        <div class="alert alert-danger mb-3">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="from-label fw-bold">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                    <div class="alert alert-danger p-1 mt-1">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            {% if field.help_text %}
+                                <div class="form-text text-muted">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button class="btn btn-primary btn-lg">
+                            {% if form.instance.pk %}変更を保存{% else %}申請する{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            {% if object.rejection_reason %}
+                <div class="mb-3">
+                    <div class="fw-bold text-danger mb-1">却下理由：</div>
+                    <div class="border p-3 bg-light rounded">{{ object.rejection_reason|linebreaksbr }}</div>
+                </div>
+                {% endif %}
+
+            <div class="text-center mt-4">
+                <a href="{% url 'application:application_list' %}" class="text-decoration-none">
+                    <i class="bi bi-arrow-left-circle me-1"></i> 申請一覧に戻る
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

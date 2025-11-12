@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}申請詳細 - {{ object.get_application_type_display }}{% endblock %}
+
+{% block contents %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9 col-md-10">
+            
+            <div class="mb-4 fs-4 fw-bold text-primary">
+                <i class="bi bi-file-earmark-check me-2"></i> 申請詳細：{{ object.get_application_type_display }}
+            </div>
+
+            <!-- 申請者情報 -->
+            <div class="card p-4 shadow mb-4">
+                <h4 class="card-title mb-3">
+                    <i class="bi bi-person-fill me-2"></i> 申請者: {{ object.applicant.full_name }}
+                </h4>
+                <p class="text-muted">
+                    社員番号: {{ object.applicant.employee_number }} /
+                    所属: {{ object.applicant.department.name }}
+                </p>
+                <hr>
+
+                <!-- ステータス -->
+                <div class="row">
+                    <div class="col-sm-4 text-muted fw-bold">現在のステータス:</div>
+                    <div class="col-sm-8">
+                        {% if object.status == 'pending_manager' %}
+                            <span class="badge bg-warning text-dark fs-6">{{ object.get_status_display }} <i class="bi bi-clock"></i></span>
+                        {% elif object.status == 'pending_hr' %}
+                            <span class="badge bg-info fs-6">{{ object.get_status_display }} <i class="bi bi-hourglass-split"></i></span>
+                        {% elif object.status == 'approved' %}
+                            <span class="badge bg-success fs-6">{{ object.get_status_display }} <i class="bi bi-check-circle-fill"></i></span>
+                        {% elif object.status == 'rejected' %}
+                            <span class="badge bg-danger fs-6">{{ object.get_status_display }} <i class="bi bi-x-octagon-fill"></i></span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 申請内容 -->
+            <div class="card p-4 shadow">
+                <h5 class="mt-2 mb-3 text-secondary"><i class="bi bi-list-task me-2"></i> 申請内容</h5>
+                
+                <div class="row mb-3 pb-2 border-bottom">
+                    <div class="col-sm-4 text-muted fw-bold">申請タイプ:</div>
+                    <div class="col-sm-8 fw-bold">{{ object.get_application_type_display }}</div>
+                </div>
+
+                <div class="row mb-3 pb-2 border-bottom">
+                    <div class="col-sm-4 text-muted fw-bold">対象日/期間:</div>
+                    <div class="col-sm-8 fw-bold">
+                        {% if object.start_datetime == object.end_datetime %}
+                            {{ object.start_datetime|date:'Y年n月j日 (D)' }}
+                        {% else %}
+                            {{ object.start_datetime|date:'Y年n月j日 (D)' }} 〜 {{ object.end_datetime|date:'Y年n月j日 (D)'|default:"（未設定）" }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if object.start_datetime or object.end_datetime %}
+                <div class="row mb-3 pb-2 border-bottom">
+                    <div class="col-sm-4 text-muted fw-bold">対象時間:</div>
+                    <div class="col-sm-8 fw-bold">
+                        {% if object.start_datetime %}{{ object.start_datetime|date:'H:i' }}{% else %}終日{% endif %}
+                        〜
+                        {% if object.end_datetime %}{{ object.end_datetime|date:'H:i' }}{% else %}終日{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="row mb-3 mt-4">
+                    <div class="col-sm-4 text-muted fw-bold">申請理由:</div>
+                    <div class="col-sm-8 border p-3 bg-light rounded" style="white-space: pre-wrap;">{{ object.reason|default:'(記載なし)' }}</div>
+                </div>
+
+                <hr class="mt-4">
+
+                <!-- 承認履歴 -->
+                <h5 class="mb-3 text-secondary"><i class="bi bi-person-lines-fill me-2"></i> 承認履歴</h5>
+                <div class="row mb-3 pb-2 border-bottom">
+                    <div class="col-sm-4 text-muted">マネージャー承認:</div>
+                    <div class="col-sm-8">
+                        {% if object.manager_approver %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> 承認済</span>
+                            {{ object.manager_approver.full_name }} ({{ object.manager_approved_at|date:'Y/m/d H:i' }})
+                        {% else %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i> 承認待ち</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3 pb-2">
+                    <div class="col-sm-4 text-muted">人事承認:</div>
+                    <div class="col-sm-8">
+                        {% if object.hr_approver %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> 承認済</span>
+                            {{ object.hr_approver.full_name }} ({{ object.hr_approved_at|date:'Y/m/d H:i' }})
+                        {% elif object.status == 'rejected' %}
+                            <span class="badge bg-danger"><i class="bi bi-x-octagon me-1"></i> 却下済</span>
+                        {% else %}
+                            <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i> 承認待ち</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if object.rejection_reason %}
+                    <div class="alert alert-danger mt-3">
+                        <h6 class="text-danger"><i class="bi bi-x-circle-fill me-1"></i> 却下理由:</h6>
+                        <p class="mb-0" style="white-space: pre-wrap;">{{ object.rejection_reason }}</p>
+                    </div>
+                {% endif %}
+                <hr class="mt-4">
+
+                <div class="text-center mt-4">
+                    <a href="{% url 'application:application_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> 申請一覧に戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

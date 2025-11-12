@@ -1,11 +1,10 @@
-from decimal import getcontext
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils import timezone
-from django.views.generic import ListView, DetailView, CreateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from datetime import date
+from datetime import date, timedelta
 from ..models import Application
 from ..forms import ApplicationForm
 
@@ -13,7 +12,7 @@ class ApplicationCreateView(LoginRequiredMixin, CreateView):
     model = Application
     form_class = ApplicationForm
     template_name = 'application/application_form.html'
-    success_url = reverse_lazy('application_list')
+    success_url = reverse_lazy('application:application_list')
 
     def form_valid(self, form):
         form.instance.applicant = self.request.user
@@ -42,7 +41,8 @@ class ApplicationListView(LoginRequiredMixin, ListView):
         if self.end_date_param:
             try:
                 end_date_obj = date.fromisoformat(self.end_date_param)
-                queryset = queryset.filter(start_datetime__lte=end_date_obj)
+                next_date = end_date_obj + timedelta(days=1)
+                queryset = queryset.filter(start_datetime__lt=next_date)
             except ValueError:
                 pass
         
@@ -67,3 +67,43 @@ class ApplicationListView(LoginRequiredMixin, ListView):
         context['current_filters_query'] = f'&{query_params.urlencode()}' if query_params else ''
         
         return context
+    
+class ApplicationDetailView(LoginRequiredMixin, DetailView):
+    model = Application
+    template_name = 'application/application_detail.html'
+
+    def get_queryset(self):
+        return Application.objects.filter(applicant=self.request.user).select_related('applicant')
+
+class ApplicationUpdateView(LoginRequiredMixin, UpdateView):
+    model = Application
+    form_class = ApplicationForm
+    template_name = 'application/application_form.html'
+    success_url = reverse_lazy('application:application_list')
+
+    def get_queryset(self):
+        return Application.objects.filter(applicant=self.request.user)
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        
+        if obj.status in ['approved', 'pending_hr']:
+            messages.warning(self.request, '承認済、または一次承認済のため編集できません。')
+            return redirect('application:application_list')
+        return obj
+
+class ApplicationDeleteView(LoginRequiredMixin, DeleteView):
+    model = Application
+    template_name = 'application/application_delete.html'
+    success_url = reverse_lazy('application:application_list')
+
+    def get_queryset(self):
+        return Application.objects.filter(applicant=self.request.user).select_related('applicant')
+    
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        
+        if obj.status in ['approved', 'pending_hr']:
+            messages.warning(self.request, '承認済、または一次承認済のため削除できません。')
+            return redirect('application:application_list')
+        return obj

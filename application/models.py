@@ -12,9 +12,9 @@ class Application(models.Model):
         ('remote', '在宅勤務'),
         ('ather', 'その他'),
     ]
-    STATUS_CHOECES = [
-        ('pending_manager', '上司申請待ち'),
-        ('pending_hr', '人事申請待ち'),
+    STATUS_CHOICES = [
+        ('pending_manager', '上司承認待ち'),
+        ('pending_hr', '人事承認待ち'),
         ('approved', '承認済'),
         ('rejected', '却下'),
     ]
@@ -47,7 +47,8 @@ class Application(models.Model):
     reason = models.TextField(verbose_name='申請理由')
     start_datetime = models.DateTimeField(verbose_name='開始日時')
     end_datetime = models.DateTimeField(blank=True, null=True, verbose_name='終了日時')
-    status = models.CharField(max_length=50, choices=STATUS_CHOECES, default='pending_manager', verbose_name='ステータス')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='pending_manager', verbose_name='ステータス')
+    rejection_reason = models.TextField(blank=True, null=True, verbose_name='却下理由')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='申請日時')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
 
@@ -64,18 +65,35 @@ class Application(models.Model):
         self.manager_approver = user
         self.manager_approved_at = timezone.now()
         self.status = 'pending_hr'
+        self.rejection_reason = None
         self.save()
 
     def approve_by_hr(self, user):
         self.manager_approver = user
         self.manager_approved_at = timezone.now()
         self.status = 'approved'
+        self.rejection_reason = None
         self.save()
     
-    def reject(self, user):
+    def reject(self, user, reason=None):
         if user.is_manager:
             self.manager_approver = user
         elif user.is_hr:
             self.hr_approver = user
         self.status = 'rejected'
+        self.rejection_reason = reason
+        self.save()
+    
+    def send_back(self, user, reason=None):
+        if self.status not in ['pending_manager', 'pending_hr', 'approved']:
+            raise ValueError('この申請は差し戻しできません。')
+        
+        if user.is_manager:
+            self.status = 'pending_manager'
+            self.manager_approver = None
+        elif user.is_hr:
+            self.status = 'pending_hr'
+            self.hr_approver = None
+        
+        self.rejection_reason = reason
         self.save()
