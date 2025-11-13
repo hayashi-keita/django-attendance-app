@@ -32,8 +32,6 @@
                             <span class="badge bg-info fs-6">{{ object.get_status_display }} <i class="bi bi-hourglass-split"></i></span>
                         {% elif object.status == 'approved' %}
                             <span class="badge bg-success fs-6">{{ object.get_status_display }} <i class="bi bi-check-circle-fill"></i></span>
-                        {% elif object.status == 'rejected' %}
-                            <span class="badge bg-danger fs-6">{{ object.get_status_display }} <i class="bi bi-x-octagon-fill"></i></span>
                         {% endif %}
                     </div>
                 </div>
@@ -97,8 +95,6 @@
                         {% if object.hr_approver %}
                             <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> 承認済</span>
                             {{ object.hr_approver.full_name }} ({{ object.hr_approved_at|date:'Y/m/d H:i' }})
-                        {% elif object.status == 'rejected' %}
-                            <span class="badge bg-danger"><i class="bi bi-x-octagon me-1"></i> 却下済</span>
                         {% else %}
                             <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i> 承認待ち</span>
                         {% endif %}
@@ -120,10 +116,6 @@
                     <form method="post" class="border p-3 rounded bg-light">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="rejection_reason" class="form-label fw-bold">却下理由（却下時のみ必須）</label>
-                            <textarea name="rejection_reason" id="rejection_reason" rows="3" class="form-control" placeholder="却下する場合は理由を記載してください"></textarea>
-                        </div>
-                        <div class="mb-3">
                             <label for="send_back_reason" class="form-label fw-bold">差し戻し理由（差し戻す場合のみ必須）</label>
                             <textarea name="send_back_reason" id="send_back_reason" rows="2" class="form-control" placeholder="必要に応じて理由を記載"></textarea>
                         </div>
@@ -131,9 +123,6 @@
                         <div class="d-flex gap-3">
                             <button type="submit" name="approve" value="true" class="btn btn-success flex-fill">
                                 <i class="bi bi-check-circle me-2"></i> 承認する
-                            </button>
-                            <button type="submit" name="reject" value="true" class="btn btn-danger flex-fill">
-                                <i class="bi bi-x-octagon me-2"></i> 却下する
                             </button>
                             <button type="submit" name="send_back" value="true" class="btn btn-warning text-dark flex-fill">
                                 <i class="bi bi-arrow-counterclockwise me-2"></i> 差し戻す

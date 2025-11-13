@@ -41,15 +41,8 @@
                         {% if request.user.is_authenticated %}
                             <a href="{% url 'attendance:index' %}" class="nav-link">ダッシュボード</a>
                             
-                            {# 💡 ロールに応じたナビゲーションの例 #}
-                            {% if request.user.is_employee %}
-                                <a href="" class="nav-link">自分の記録</a>
-                            {% elif request.user.is_manager %}
-                                <a href="" class="nav-link">申請管理</a>
-                            {% endif %}
-                            
                             {# 💡 通知機能 #}
-                            <a href="" class="nav-link position-relative">
+                            <a href="{% url 'notifications:notification_list' %}" class="nav-link position-relative">
                                 📬 通知
                                 {% if unread_notification_count > 0 %}
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">

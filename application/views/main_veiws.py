@@ -7,6 +7,7 @@ from django.urls import reverse_lazy
 from datetime import date, timedelta
 from ..models import Application
 from ..forms import ApplicationForm
+from notifications.utils import create_notification
 
 class ApplicationCreateView(LoginRequiredMixin, CreateView):
     model = Application
@@ -17,7 +18,16 @@ class ApplicationCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.applicant = self.request.user
         messages.success(self.request, '申請を送信しました。')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+
+        create_notification(
+            sender=self.request.user,
+            recipient=self.request.user.department.manager,
+            message=f'{self.request.user.full_name}さんが{self.object.get_application_type_display()}の申請をしました。',
+            link_name='application:manager_application_detail',
+            pk=self.object.pk,
+        )
+        return response
 
 class ApplicationListView(LoginRequiredMixin, ListView):
     model = Application

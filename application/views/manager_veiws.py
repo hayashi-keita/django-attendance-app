@@ -7,6 +7,7 @@ from django.db.models import Q
 from datetime import date, timedelta
 from ..models import Application
 from accounts.mixins import ManagerOnlyMixin
+from notifications.utils import create_notification
 
 class MnagerApplicationListView(ManagerOnlyMixin, ListView):
     model = Application
@@ -99,7 +100,7 @@ class ManagerApplicationDetailView(ManagerOnlyMixin, DetailView):
             'applicant',
             'manager_approver',
             'hr_approver',
-        ).order_by('status', '-created_at')
+        ).order_by('-start_datetime')
 
         return queryset
     
@@ -111,30 +112,35 @@ class ManagerApplicationDetailView(ManagerOnlyMixin, DetailView):
             if self.object.status == 'pending_manager':
                 self.object.approve_by_manager(user)
                 messages.success(request, '申請を承認しました。')
+                # 通知
+                create_notification(
+                    sender=user,
+                    recipient=self.object.applicant,
+                    message=f'あなたの申請『{self.object.get_application_type_display()}』が上司に承認されました。',
+                    link_name='application:application_detail',
+                    pk=self.object.pk
+                )
+
             else:
                 messages.warning(request, '申請できない状態です。')
         
-        elif 'reject' in request.POST:
-            if self.object.status == 'pending_manager':
-                reason = request.POST.get('rejection_reason', '').strip()
-                if not reason:
-                    messages.error(request, '却下の理由は必須です。')
-                    return redirect('application:manager_application_detail', pk=self.object.pk)
-
-                self.object.reject(user, reason=reason)
-                messages.success(request, '申請を却下しました。')
-            else:
-                messages.warning(request, '却下できない状態です。')
-        
         elif 'send_back' in request.POST:
-            reason = request.POST.get('sed_back_reason', '').strip()
-            if self.object.status == 'pending_manager':
+            reason = request.POST.get('send_back_reason', '').strip()
+            if self.object.status in ['pending_manager', 'pending_hr']:
                 if not reason:
                     messages.error(request, '差し戻し理由は必須です。')
                     return redirect('application:manager_application_detail', pk=self.object.pk)
             
                 self.object.send_back(user, reason=reason)
                 messages.success(request, '申請を社員に差し戻しました。')
+                # 通知
+                create_notification(
+                    sender=user,
+                    recipient=self.object.applicant,
+                    message=f'あなたの申請『{self.object.get_application_type_display()}』が上司に差し戻しされました。',
+                    link_name='application:application_detail',
+                    pk=self.object.pk
+                )
             else:
                 messages.warning(request, '差し戻せない状態です。')
         

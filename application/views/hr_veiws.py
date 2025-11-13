@@ -1,12 +1,11 @@
 from django.shortcuts import redirect
 from django.contrib import messages
-from django.utils import timezone
 from django.views.generic import ListView, DetailView
-from django.urls import reverse_lazy
-from django.db.models import Q
 from datetime import date, timedelta
 from ..models import Application
 from accounts.mixins import HrOnlyMixin
+from notifications.utils import create_notification
+
 
 class HrApplicationListView(HrOnlyMixin, ListView):
     model = Application
@@ -76,7 +75,7 @@ class HrApplicationDetailView(HrOnlyMixin, DetailView):
 
     def get_queryset(self):
         return Application.objects.filter(
-            status__in=['pending_hr', 'approved', 'rejected']
+            status__in=['pending_manager','pending_hr', 'approved',]
         ).select_related(
             'applicant',
             'manager_approver',
@@ -91,30 +90,35 @@ class HrApplicationDetailView(HrOnlyMixin, DetailView):
             if self.object.status == 'pending_hr':
                 self.object.approve_by_hr(user)
                 messages.success(request, '申請を承認しました。')
+                # 通知
+                create_notification(
+                    sender=user,
+                    recipient=self.object.applicant,
+                    message=f'あなたの申請『{self.object.get_application_type_display()}』が人事に承認されました。',
+                    link_name='application:application_detail',
+                    pk=self.object.pk
+                )
             else:
                 messages.warning(request, '承認できない状態です。')
-        
-        elif 'reject' in request.POST:
-            if self.object.status == 'pending_hr':
-                reason = request.POST.get('rejection_reason', '').strip()
-                if not reason:
-                    messages.error(request, '却下理由は必須です。')
-                    return redirect('application:hr_application_detail', pk=self.object.pk)
-                
-                self.object.reject(user, reason=reason)
-                messages.success(request, '申請を却下しました。')
-            else:
-                messages.warning(request, '却下できない状態です。')
 
         elif 'send_back' in request.POST:
-            if self.object.status == 'pending_hr':
-                reason = request.POST.get('rejection_reason', '').strip()
+            if self.object.status in ['pending_hr', 'approved' ]:
+                reason = request.POST.get('send_back_reason', '').strip()
                 if not reason:
                     messages.error(request, '差し戻し理由は必須です。')
                     return redirect('application:hr_application_detail', pk=self.object.pk)
                 
-                self.object.send_back(user, reason=reason)
-                messages.success(request, '申請を上司承認待ちに差し戻しました。')
+                cancel = True if self.object.status == 'approved' else False
+                self.object.send_back(user, reason=reason, cancel_approval=cancel)
+                messages.success(request, '申請を人事承認待ちに差し戻しました。')
+                # 通知
+                create_notification(
+                    sender=user,
+                    recipient=self.object.applicant,
+                    message=f'あなたの申請『{self.object.get_application_type_display()}』が人事に差し戻しされました。',
+                    link_name='application:application_detail',
+                    pk=self.object.pk
+                )
             else:
                 messages.warning(request, '差し戻せない状態です。')
         

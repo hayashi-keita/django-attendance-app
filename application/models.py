@@ -69,8 +69,8 @@ class Application(models.Model):
         self.save()
 
     def approve_by_hr(self, user):
-        self.manager_approver = user
-        self.manager_approved_at = timezone.now()
+        self.hr_approver = user
+        self.hr_approved_at = timezone.now()
         self.status = 'approved'
         self.rejection_reason = None
         self.save()
@@ -84,7 +84,7 @@ class Application(models.Model):
         self.rejection_reason = reason
         self.save()
     
-    def send_back(self, user, reason=None):
+    def send_back(self, user, reason=None, cancel_approval=False):
         if self.status not in ['pending_manager', 'pending_hr', 'approved']:
             raise ValueError('この申請は差し戻しできません。')
         
@@ -92,8 +92,13 @@ class Application(models.Model):
             self.status = 'pending_manager'
             self.manager_approver = None
         elif user.is_hr:
-            self.status = 'pending_hr'
-            self.hr_approver = None
+            if cancel_approval:
+                self.status = 'pending_hr'
+                self.hr_approver = None
+            else:
+                self.status = 'pending_manager'
+                self.hr_approver = None
         
         self.rejection_reason = reason
         self.save()
+
